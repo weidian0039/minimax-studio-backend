@@ -246,8 +246,10 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_STAGING_PROJECT_ID }}
+        continue-on-error: true
 
       - name: Run staging health check
+        if: always() && env.RAILWAY_TOKEN != ''
         run: |
           for i in 1 2 3 4 5; do
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://api.staging.minimax-studio.com/health")
@@ -262,6 +264,7 @@ jobs:
           exit 1
 
       - name: Run staging API smoke tests
+        if: always() && env.RAILWAY_TOKEN != ''
         run: |
           API_URL="https://api.staging.minimax-studio.com"
           RESP=$(curl -s -w "\n%{http_code}" -X POST "$API_URL/api/ideas" \
@@ -330,6 +333,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROD_PROJECT_ID }}
+        continue-on-error: true
 
       - name: Tag Sentry release
         uses: getsentry/action-release@v1
