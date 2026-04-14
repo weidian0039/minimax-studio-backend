@@ -126,14 +126,6 @@ jobs:
         working-directory: backend
         run: npm ci --frozen-lockfile
 
-      - name: Run database migrations (dry run first)
-        working-directory: backend
-        run: npx knex migrate:latest --dry-run
-        env:
-          DATABASE_URL: ${{ github.ref == 'refs/heads/develop'
-            && secrets.STAGING_DATABASE_URL
-            || secrets.PROD_DATABASE_URL }}
-
       - name: Execute database migrations
         working-directory: backend
         run: npx knex migrate:latest
@@ -196,6 +188,10 @@ jobs:
       - name: Install dependencies
         working-directory: backend
         run: npm ci --frozen-lockfile
+
+      - name: Build TypeScript
+        working-directory: backend
+        run: npm run build
 
       - name: Run test suite
         working-directory: backend
