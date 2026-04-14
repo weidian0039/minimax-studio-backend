@@ -7,8 +7,6 @@ export {}; // Force module scope
 
 import { Pool, PoolClient } from 'pg';
 import { randomUUID } from 'crypto';
-import path from 'path';
-import fs from 'fs';
 
 const logger = require('../logger');
 

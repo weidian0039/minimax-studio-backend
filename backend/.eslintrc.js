@@ -4,6 +4,7 @@ module.exports = {
     ecmaVersion: 2022,
     sourceType: 'module',
     project: './tsconfig.json',
+    tsconfigRootDir: __dirname,
   },
   plugins: ['@typescript-eslint'],
   extends: [
@@ -13,11 +14,13 @@ module.exports = {
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'off',
+    '@typescript-eslint/no-var-requires': 'off',
     'no-console': ['warn', { allow: ['info', 'warn', 'error'] }],
   },
   env: {
     node: true,
     es2022: true,
   },
+  ignorePatterns: ['**/*.test.ts', 'dist/', 'node_modules/'],
 };

@@ -5,7 +5,7 @@ export {}; // Force module scope
 // Mounted at /admin/queues, protected by admin role check.
 // Only active when QUEUE_TYPE=bullmq and Redis is reachable.
 
-import { Application, Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { createBullBoard } from '@bull-board/api';
 import { ExpressAdapter } from '@bull-board/express';
 import { isBullMQReady, getBullMQQueueName } from './queue/bullmqQueue';
