@@ -1,0 +1,359 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'mission-demo-*.html'
+      - 'mission-demo-*.gif'
+      - 'stakeholder-deck.html'
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'index.html'
+      - 'assets/**'
+      - 'mission-demo-*.html'
+      - 'mission-demo-*.gif'
+      - 'stakeholder-deck.html'
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # ─────────────────────────────────────────────────────────
+  # JOB 1: Landing Page Validation (static HTML — current state)
+  # Phase 1: Single-file landing page at workspace root
+  # Phase 2: Migrate to frontend/ Node.js project when ready
+  # ─────────────────────────────────────────────────────────
+  lint-landing:
+    name: Validate Landing Page
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check HTML syntax
+        run: |
+          if [ -f index.html ]; then
+            echo "Validating index.html..."
+            # Basic well-formedness: check for matching DOCTYPE, html, body tags
+            if grep -qi "<!DOCTYPE html>" index.html && \
+               grep -qi "</html>" index.html && \
+               grep -qi "<body" index.html; then
+              echo "index.html structure: OK"
+            else
+              echo "ERROR: index.html missing required structure tags"
+              exit 1
+            fi
+          else
+            echo "No index.html found"
+          fi
+
+      - name: Check for console.error calls (lint)
+        run: |
+          if grep -r "console\.error\|console\.warn\|console\.log" index.html mission-demo-*.html 2>/dev/null; then
+            echo "WARNING: Found console statements in HTML files"
+            # Fail only on console.error (not warn/log in HTML)
+            if grep -r "console\.error" index.html mission-demo-*.html 2>/dev/null; then
+              echo "ERROR: console.error found in HTML files"
+              exit 1
+            fi
+          fi
+
+      - name: Check for hardcoded URLs (production-only)
+        run: |
+          # Warn if production URLs are hardcoded in HTML
+          if grep -r "minimax-studio\.com\|api\.minimax" index.html 2>/dev/null; then
+            echo "NOTE: Found hardcoded domain references. Consider using environment-based URLs."
+          fi
+
+      - name: Validate asset references
+        run: |
+          # Ensure all asset paths referenced in HTML actually exist
+          for asset in $(grep -hoE '(href|src)="[^"]*\.(css|js|png|jpg|gif|webp|svg|ico)"' index.html 2>/dev/null | sed 's/href="\|src="//g' | sed 's/"//g'); do
+            if [ ! -f "$asset" ]; then
+              echo "WARNING: Referenced asset not found: $asset"
+            fi
+          done
+          echo "Asset reference check complete"
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 2: Frontend Build (Node.js project — Phase 2)
+  # Activates when frontend/package.json exists
+  # ─────────────────────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Node.js frontend
+        run: |
+          if [ ! -f frontend/package.json ]; then
+            echo "No frontend/package.json found. Skipping Node.js build."
+            echo "NO_NODE_PROJECT=true" >> $GITHUB_OUTPUT
+          else
+            echo "NO_NODE_PROJECT=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        working-directory: frontend
+        run: npx eslint . --max-warnings=0
+        continue-on-error: false
+
+      - name: Run TypeScript type check
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        working-directory: frontend
+        run: npx tsc --noEmit
+        continue-on-error: false
+
+      - name: Build frontend bundle
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        working-directory: frontend
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifact
+        if: steps.check.outputs.NO_NODE_PROJECT != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 3: Test Suite (Node.js project — Phase 2)
+  # ─────────────────────────────────────────────────────────
+  test-frontend:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: build-frontend
+    if: needs.build-frontend.outputs.NO_NODE_PROJECT != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage
+        env:
+          CI: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: frontend/coverage/
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 4: E2E Tests (Playwright — Phase 2)
+  # ─────────────────────────────────────────────────────────
+  e2e-frontend:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: lint-landing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check if Node.js frontend has E2E tests
+        run: |
+          if [ -f frontend/package.json ] && [ -f frontend/playwright.config.ts ]; then
+            echo "E2E_PROJECT=true" >> $GITHUB_OUTPUT
+          else
+            echo "E2E_PROJECT=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        if: steps.check-e2e.outputs.E2E_PROJECT == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.check-e2e.outputs.E2E_PROJECT == 'true'
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        if: steps.check-e2e.outputs.E2E_PROJECT == 'true'
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        if: steps.check-e2e.outputs.E2E_PROJECT == 'true'
+        working-directory: frontend
+        run: npx playwright test
+        env:
+          CI: true
+
+      - name: E2E skipped (no Node.js project)
+        if: steps.check-e2e.outputs.E2E_PROJECT == 'false'
+        run: echo "E2E tests skipped — no frontend/playwright.config.ts found"
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 5: Staging Deploy
+  # ─────────────────────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [lint-landing, build-frontend, test-frontend, e2e-frontend]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging.minimax-studio.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy landing page to Vercel (Staging)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--environment=preview'
+          working-directory: .
+          vercel-pull-request-number: ${{ github.event.pull_request.number }}
+
+      - name: Run staging smoke tests
+        run: |
+          STAGING_URL="${{ vars.STAGING_FRONTEND_URL }}"
+          echo "Running smoke tests against $STAGING_URL"
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "ERROR: Staging returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Smoke test passed: HTTP $HTTP_CODE"
+
+      - name: Notify Slack on staging deploy
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Frontend deployed to staging: ${{ vars.STAGING_FRONTEND_URL }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Frontend Staging Deploy*\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nURL: ${{ vars.STAGING_FRONTEND_URL }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+  # ─────────────────────────────────────────────────────────
+  # JOB 6: Production Deploy (on release tag)
+  # ─────────────────────────────────────────────────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint-landing, build-frontend, test-frontend, e2e-frontend]
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: production
+      url: https://minimax-studio.com
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy landing page to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod --environment=production'
+          working-directory: .
+
+      - name: Tag Sentry release
+        if: needs.build-frontend.outputs.NO_NODE_PROJECT != 'true'
+        uses: getsentry/action-release@v1
+        with:
+          environment: production
+          version: ${{ github.ref_name }}
+          sourcemaps: frontend/dist/
+          url_prefix: '~'
+          project: minimax-studio-frontend
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+
+      - name: Run production smoke tests
+        run: |
+          PROD_URL="${{ vars.PROD_FRONTEND_URL }}"
+          echo "Running smoke tests against $PROD_URL"
+          for i in 1 2 3; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL")
+            if [ "$HTTP_CODE" == "200" ]; then
+              echo "Smoke test passed (attempt $i): HTTP $HTTP_CODE"
+              exit 0
+            fi
+            echo "Attempt $i failed: HTTP $HTTP_CODE"
+            if [ $i -lt 3 ]; then sleep 20; fi
+          done
+          echo "ERROR: All smoke test attempts failed"
+          exit 1
+
+      - name: Notify Slack on production deploy
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "Frontend deployed to production: ${{ vars.PROD_FRONTEND_URL }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Frontend Production Deploy*\nTag: `${{ github.ref_name }}`\nCommit: `${{ github.sha }}`\nAuthor: ${{ github.actor }}\nURL: ${{ vars.PROD_FRONTEND_URL }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

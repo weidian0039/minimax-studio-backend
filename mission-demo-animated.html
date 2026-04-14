@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Demo — 想到即看见，看见即得到</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0A0F1C;
+      --bg-card: #111827;
+      --bg-card-active: #15213a;
+      --accent: #22D3EE;
+      --accent-dim: rgba(34, 211, 238, 0.15);
+      --accent-glow: rgba(34, 211, 238, 0.4);
+      --accent-darker: #0ea5c0;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --border: rgba(34, 211, 238, 0.12);
+      --border-bright: rgba(34, 211, 238, 0.4);
+      --step1-color: #22D3EE;
+      --step2-color: #A78BFA;
+      --step3-color: #34D399;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── AMBIENT BACKGROUND ── */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34, 211, 238, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    .bg-glow-center {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(34, 211, 238, 0.06) 0%, rgba(167, 139, 250, 0.03) 40%, transparent 70%);
+      pointer-events: none;
+      animation: bgPulse 8s ease-in-out infinite;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    }
+
+    /* Ambient floating orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(60px);
+      pointer-events: none;
+      animation: orbFloat 12s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 300px; height: 300px;
+      top: 20%; left: 10%;
+      background: rgba(34, 211, 238, 0.06);
+      animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 250px; height: 250px;
+      top: 60%; right: 10%;
+      background: rgba(167, 139, 250, 0.06);
+      animation-delay: -4s;
+    }
+    .orb-3 {
+      width: 200px; height: 200px;
+      bottom: 10%; left: 40%;
+      background: rgba(52, 211, 153, 0.05);
+      animation-delay: -8s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -30px) scale(1.1); }
+      66% { transform: translate(-15px, 20px) scale(0.95); }
+    }
+
+    /* ── DEMO CONTAINER ── */
+    .demo-wrap {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1000px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    /* ── LOGO ── */
+    .logo-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(-16px);
+      animation: fadeSlideDown 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    }
+
+    @keyframes fadeSlideDown {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-mark {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--step2-color));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(34, 211, 238, 0.15);
+      position: relative;
+      overflow: hidden;
+      animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    @keyframes logoGlow {
+      0%, 100% { box-shadow: 0 0 24px var(--accent-glow), 0 0 48px rgba(34, 211, 238, 0.15); }
+      50% { box-shadow: 0 0 32px var(--accent-glow), 0 0 64px rgba(34, 211, 238, 0.25); }
+    }
+
+    .logo-mark::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent 60%);
+      border-radius: 12px;
+    }
+
+    .logo-text {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent), var(--step2-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── TAGLINE ── */
+    .tagline {
+      font-size: clamp(1.4rem, 3.5vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 52px;
+      opacity: 0;
+      animation: taglineIn 0.8s ease-out 0.6s forwards;
+    }
+
+    @keyframes taglineIn {
+      0% { opacity: 0; letter-spacing: 0.05em; }
+      100% { opacity: 1; letter-spacing: -0.03em; }
+    }
+
+    .tagline .accent-cyan { color: var(--accent); }
+    .tagline .accent-purple { color: var(--step2-color); }
+    .tagline .accent-green { color: var(--step3-color); }
+
+    /* ── PROGRESS BAR ── */
+    .progress-track {
+      width: 100%;
+      max-width: 640px;
+      height: 2px;
+      background: rgba(34, 211, 238, 0.08);
+      border-radius: 1px;
+      margin: 0 auto 48px;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out 1.0s forwards;
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .progress-fill {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      width: 0%;
+      border-radius: 1px;
+      background: linear-gradient(90deg, var(--step1-color), var(--step2-color), var(--step3-color));
+      box-shadow: 0 0 12px var(--accent-glow);
+      animation: progressCycle 6s ease-in-out infinite;
+    }
+
+    @keyframes progressCycle {
+      0%   { width: 0%; }
+      8%   { width: 5%; }
+      16%  { width: 35%; }
+      33%  { width: 38%; }
+      41%  { width: 68%; }
+      58%  { width: 71%; }
+      66%  { width: 100%; }
+      83%  { width: 100%; }
+      91%  { width: 5%; }
+      100% { width: 0%; }
+    }
+
+    /* Step progress markers */
+    .progress-markers {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      transform: translateY(-50%);
+      display: flex;
+      justify-content: space-between;
+      padding: 0 15%;
+    }
+
+    .progress-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: background 0.4s, box-shadow 0.4s;
+    }
+
+    .progress-dot.p1-active {
+      background: var(--step1-color);
+      box-shadow: 0 0 8px var(--step1-color);
+      animation: dotActive 6s ease-in-out infinite;
+    }
+    .progress-dot.p2-active {
+      background: var(--step2-color);
+      box-shadow: 0 0 8px var(--step2-color);
+      animation: dotActive2 6s ease-in-out infinite;
+    }
+    .progress-dot.p3-active {
+      background: var(--step3-color);
+      box-shadow: 0 0 8px var(--step3-color);
+      animation: dotActive3 6s ease-in-out infinite;
+    }
+
+    @keyframes dotActive {
+      0%, 8%   { background: var(--step1-color); box-shadow: 0 0 8px var(--step1-color); }
+      16%      { background: var(--step1-color); box-shadow: 0 0 14px var(--step1-color); }
+      25%, 100% { background: rgba(255,255,255,0.15); box-shadow: none; }
+    }
+    @keyframes dotActive2 {
+      0%, 33%  { background: rgba(255,255,255,0.15); box-shadow: none; }
+      41%      { background: var(--step2-color); box-shadow: 0 0 14px var(--step2-color); }
+      50%, 100% { background: rgba(255,255,255,0.15); box-shadow: none; }
+    }
+    @keyframes dotActive3 {
+      0%, 58%  { background: rgba(255,255,255,0.15); box-shadow: none; }
+      66%      { background: var(--step3-color); box-shadow: 0 0 14px var(--step3-color); }
+      75%, 100% { background: rgba(255,255,255,0.15); box-shadow: none; }
+    }
+
+    /* ── STEPS ROW ── */
+    .steps-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+
+    /* ── ENERGY BEAM (connecting line behind cards) ── */
+    .energy-beam {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80%;
+      height: 2px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .energy-beam-line {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .energy-beam-line::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        var(--step1-color) 30%,
+        var(--step2-color) 60%,
+        var(--step3-color) 90%,
+        transparent 100%
+      );
+      opacity: 0.5;
+      filter: blur(2px);
+      animation: energyFlow 6s ease-in-out infinite;
+    }
+
+    @keyframes energyFlow {
+      0%   { left: -100%; opacity: 0; }
+      5%   { opacity: 0.6; }
+      16%  { left: 70%; opacity: 0.6; }
+      20%  { opacity: 0; }
+      33%  { left: -100%; opacity: 0; }
+      38%  { opacity: 0.6; }
+      50%  { left: 70%; opacity: 0.6; }
+      54%  { opacity: 0; }
+      66%  { left: -100%; opacity: 0; }
+      71%  { opacity: 0.6; }
+      83%  { left: 70%; opacity: 0.6; }
+      87%  { opacity: 0; }
+      100% { left: -100%; opacity: 0; }
+    }
+
+    /* ── INDIVIDUAL STEP CARD ── */
+    .step-card {
+      flex: 1;
+      max-width: 260px;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateY(32px) scale(0.92);
+    }
+
+    /* Staggered entrance: each card gets 1.5s transition with 1.2s stagger */
+    .step-card:nth-child(1) { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s forwards; }
+    .step-card:nth-child(3) { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.2s forwards; }
+    .step-card:nth-child(5) { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 3.4s forwards; }
+
+    @keyframes stepReveal {
+      0%   { opacity: 0; transform: translateY(32px) scale(0.92); }
+      60%  { opacity: 1; transform: translateY(-6px) scale(1.04); }
+      80%  { transform: translateY(2px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .card-inner {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px 22px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.5s, background 0.5s, box-shadow 0.5s, transform 0.5s;
+    }
+
+    /* Top color accent bar */
+    .card-inner::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--step-color), transparent);
+      opacity: 0.6;
+    }
+
+    /* Inner glow overlay */
+    .card-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top, var(--card-glow), transparent 65%);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+    }
+
+    .step-card:hover .card-inner,
+    .step-card.active .card-inner {
+      border-color: var(--border-bright);
+      background: var(--bg-card-active);
+      box-shadow: 0 0 50px var(--card-glow), 0 8px 32px rgba(0,0,0,0.3);
+      transform: translateY(-3px);
+    }
+
+    .step-card:hover .card-inner::after,
+    .step-card.active .card-inner::after {
+      opacity: 1;
+    }
+
+    /* Icon ring */
+    .icon-ring {
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 18px;
+      font-size: 1.8rem;
+      position: relative;
+      z-index: 1;
+      animation: iconFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .icon-ring::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 24px;
+      background: var(--icon-ring-bg);
+      opacity: 0.4;
+      animation: iconRingPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes iconRingPulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    /* SVG icons */
+    .icon-ring svg {
+      width: 34px;
+      height: 34px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step number badge */
+    .step-badge {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step title */
+    .step-title {
+      font-size: 1.55rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+      letter-spacing: -0.02em;
+    }
+
+    /* Step subtitle (English) */
+    .step-sub {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step description */
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Latency chip */
+    .latency-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 16px;
+      font-size: 0.63rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 4px 10px;
+      border-radius: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .latency-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--step-color);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+
+    /* ── ARROWS ── */
+    .arrow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+      padding: 0 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .arrow-connector:nth-child(2) {
+      opacity: 0;
+      animation: arrowReveal 0.6s ease-out 1.7s forwards;
+    }
+    .arrow-connector:nth-child(4) {
+      opacity: 0;
+      animation: arrowReveal 0.6s ease-out 2.9s forwards;
+    }
+
+    @keyframes arrowReveal {
+      to { opacity: 1; }
+    }
+
+    .arrow-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Animated SVG arrow */
+    .arrow-svg {
+      width: 56px;
+      height: 20px;
+      overflow: visible;
+    }
+
+    .arrow-path {
+      fill: none;
+      stroke: rgba(34, 211, 238, 0.2);
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .arrow-travel {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 40;
+      stroke-dashoffset: 40;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .arrow-connector:nth-child(2) .arrow-travel {
+      stroke: var(--accent);
+      animation: arrowTravel1 6s ease-in-out infinite;
+    }
+    .arrow-connector:nth-child(4) .arrow-travel {
+      stroke: var(--step2-color);
+      animation: arrowTravel2 6s ease-in-out infinite;
+    }
+
+    @keyframes arrowTravel1 {
+      0%   { stroke-dashoffset: 40; opacity: 0; }
+      8%   { stroke-dashoffset: 40; opacity: 1; }
+      20%  { stroke-dashoffset: 0; opacity: 1; }
+      28%  { stroke-dashoffset: 0; opacity: 0; }
+      33%  { stroke-dashoffset: 40; opacity: 0; }
+      100% { stroke-dashoffset: 40; opacity: 0; }
+    }
+
+    @keyframes arrowTravel2 {
+      0%   { stroke-dashoffset: 40; opacity: 0; }
+      41%  { stroke-dashoffset: 40; opacity: 0; }
+      50%  { stroke-dashoffset: 40; opacity: 1; }
+      62%  { stroke-dashoffset: 0; opacity: 1; }
+      70%  { stroke-dashoffset: 0; opacity: 0; }
+      75%  { stroke-dashoffset: 40; opacity: 0; }
+      100% { stroke-dashoffset: 40; opacity: 0; }
+    }
+
+    /* Arrow dots */
+    .arrow-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .arrow-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+
+    .arrow-dot:nth-child(2) { animation-delay: 0.2s; }
+    .arrow-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    .arrow-connector:nth-child(4) .arrow-dot {
+      background: var(--step2-color);
+    }
+    .arrow-connector:nth-child(4) .arrow-dot:nth-child(2) { animation-delay: 1.4s; }
+    .arrow-connector:nth-child(4) .arrow-dot:nth-child(3) { animation-delay: 1.6s; }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.25; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.3); }
+    }
+
+    /* Arrow glow chevron */
+    .arrow-chevron {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+
+    .arrow-connector:nth-child(2) .arrow-chevron {
+      color: var(--accent);
+      opacity: 0.6;
+      animation: chevronPulse1 6s ease-in-out infinite;
+    }
+    .arrow-connector:nth-child(4) .arrow-chevron {
+      color: var(--step2-color);
+      opacity: 0.6;
+      animation: chevronPulse2 6s ease-in-out infinite;
+    }
+
+    @keyframes chevronPulse1 {
+      0%, 20%  { opacity: 0.3; transform: translateX(0); }
+      28%      { opacity: 1; transform: translateX(4px); }
+      35%, 100% { opacity: 0.3; transform: translateX(0); }
+    }
+    @keyframes chevronPulse2 {
+      0%, 50%  { opacity: 0.3; transform: translateX(0); }
+      58%      { opacity: 1; transform: translateX(4px); }
+      66%, 100% { opacity: 0.3; transform: translateX(0); }
+    }
+
+    /* ── STEP COLORS ── */
+    /* Step 1 */
+    .step-card.step-1 { --step-color: var(--step1-color); --card-glow: rgba(34, 211, 238, 0.14); }
+    .step-card.step-1 .icon-ring { background: rgba(34, 211, 238, 0.12); }
+    .step-card.step-1 .icon-ring svg { color: var(--step1-color); }
+    .step-card.step-1 .step-title { color: var(--step1-color); }
+    .step-card.step-1 .icon-ring::before { background: rgba(34, 211, 238, 0.12); }
+    .step-card.step-1 .latency-dot { background: var(--step1-color); }
+
+    /* Step 2 */
+    .step-card.step-2 { --step-color: var(--step2-color); --card-glow: rgba(167, 139, 250, 0.14); }
+    .step-card.step-2 .icon-ring { background: rgba(167, 139, 250, 0.12); }
+    .step-card.step-2 .icon-ring svg { color: var(--step2-color); }
+    .step-card.step-2 .step-title { color: var(--step2-color); }
+    .step-card.step-2 .icon-ring::before { background: rgba(167, 139, 250, 0.12); }
+    .step-card.step-2 .latency-dot { background: var(--step2-color); }
+
+    /* Step 3 */
+    .step-card.step-3 { --step-color: var(--step3-color); --card-glow: rgba(52, 211, 153, 0.14); }
+    .step-card.step-3 .icon-ring { background: rgba(52, 211, 153, 0.12); }
+    .step-card.step-3 .icon-ring svg { color: var(--step3-color); }
+    .step-card.step-3 .step-title { color: var(--step3-color); }
+    .step-card.step-3 .icon-ring::before { background: rgba(52, 211, 153, 0.12); }
+    .step-card.step-3 .latency-dot { background: var(--step3-color); }
+
+    /* ── ACTIVE STEP HIGHLIGHT (looping 6s cycle) ── */
+    .step-card.step-1 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s forwards, stepActive1 6s ease-in-out infinite; }
+    .step-card.step-2 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.2s forwards, stepActive2 6s ease-in-out infinite; }
+    .step-card.step-3 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 3.4s forwards, stepActive3 6s ease-in-out infinite; }
+
+    @keyframes stepActive1 {
+      0%, 20%  { filter: brightness(1); transform: translateY(0) scale(1); }
+      28%      { filter: brightness(1.2); transform: translateY(-4px) scale(1.04); }
+      35%, 100% { filter: brightness(1); transform: translateY(0) scale(1); }
+    }
+    @keyframes stepActive2 {
+      0%, 41%  { filter: brightness(1); transform: translateY(0) scale(1); }
+      50%      { filter: brightness(1.2); transform: translateY(-4px) scale(1.04); }
+      58%, 100% { filter: brightness(1); transform: translateY(0) scale(1); }
+    }
+    @keyframes stepActive3 {
+      0%, 62%  { filter: brightness(1); transform: translateY(0) scale(1); }
+      70%      { filter: brightness(1.2); transform: translateY(-4px) scale(1.04); }
+      78%, 100% { filter: brightness(1); transform: translateY(0) scale(1); }
+    }
+
+    /* Border glow pulse on active */
+    .step-card.step-1 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s forwards, stepActive1 6s ease-in-out infinite, borderGlow1 6s ease-in-out infinite; }
+    .step-card.step-2 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.2s forwards, stepActive2 6s ease-in-out infinite, borderGlow2 6s ease-in-out infinite; }
+    .step-card.step-3 { animation: stepReveal 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 3.4s forwards, stepActive3 6s ease-in-out infinite, borderGlow3 6s ease-in-out infinite; }
+
+    @keyframes borderGlow1 {
+      0%, 20%  { --border: rgba(34, 211, 238, 0.12); }
+      28%      { --border: rgba(34, 211, 238, 0.6); }
+      35%, 100% { --border: rgba(34, 211, 238, 0.12); }
+    }
+    @keyframes borderGlow2 {
+      0%, 41%  { --border: rgba(167, 139, 250, 0.12); }
+      50%      { --border: rgba(167, 139, 250, 0.6); }
+      58%, 100% { --border: rgba(167, 139, 250, 0.12); }
+    }
+    @keyframes borderGlow3 {
+      0%, 62%  { --border: rgba(52, 211, 153, 0.12); }
+      70%      { --border: rgba(52, 211, 153, 0.6); }
+      78%, 100% { --border: rgba(52, 211, 153, 0.12); }
+    }
+
+    /* Arrow connector active states */
+    .arrow-connector:nth-child(2) {
+      animation: arrowReveal 0.6s ease-out 1.7s forwards, arrowActive1 6s ease-in-out infinite;
+    }
+    .arrow-connector:nth-child(4) {
+      animation: arrowReveal 0.6s ease-out 2.9s forwards, arrowActive2 6s ease-in-out infinite;
+    }
+
+    @keyframes arrowActive1 {
+      0%, 28%  { opacity: 0.5; }
+      35%      { opacity: 1; }
+      42%, 100% { opacity: 0.5; }
+    }
+    @keyframes arrowActive2 {
+      0%, 58%  { opacity: 0.5; }
+      66%      { opacity: 1; }
+      74%, 100% { opacity: 0.5; }
+    }
+
+    /* ── BOTTOM TAGLINE ── */
+    .bottom-note {
+      margin-top: 44px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 4.2s forwards;
+    }
+
+    .bottom-note svg {
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .bottom-note span {
+      color: var(--text-secondary);
+    }
+
+    /* ── PARTICLES ── */
+    .particle {
+      position: fixed;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      animation: particleFloat 8s ease-in-out infinite;
+    }
+
+    @keyframes particleFloat {
+      0%   { opacity: 0; transform: translateY(0) scale(0); }
+      15%  { opacity: 0.7; transform: translateY(-15px) scale(1); }
+      85%  { opacity: 0.2; transform: translateY(-80px) scale(0.5); }
+      100% { opacity: 0; transform: translateY(-100px) scale(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 767px) {
+      .steps-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+
+      .step-card {
+        max-width: 320px;
+        width: 100%;
+      }
+
+      .step-card:nth-child(1) { animation: stepRevealMobile 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.0s forwards; }
+      .step-card:nth-child(3) { animation: stepRevealMobile 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 2.2s forwards; }
+      .step-card:nth-child(5) { animation: stepRevealMobile 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) 3.4s forwards; }
+
+      .step-card { animation-name: stepRevealMobile !important; }
+
+      @keyframes stepRevealMobile {
+        from { opacity: 0; transform: translateY(24px) scale(0.92); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .arrow-connector {
+        padding: 8px 0;
+        transform: rotate(90deg);
+      }
+
+      .arrow-connector:nth-child(2) { animation: arrowReveal 0.6s ease-out 1.7s forwards; }
+      .arrow-connector:nth-child(4) { animation: arrowReveal 0.6s ease-out 2.9s forwards; }
+
+      .progress-track { display: none; }
+
+      .energy-beam { display: none; }
+
+      .orb-1 { width: 200px; height: 200px; }
+      .orb-2 { width: 160px; height: 160px; }
+      .orb-3 { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow-center"></div>
+
+  <!-- Floating orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Particles -->
+  <div class="particle" style="left: 12%; top: 68%; animation-delay: 0s;"></div>
+  <div class="particle" style="left: 25%; top: 72%; animation-delay: 1.2s; background: #A78BFA;"></div>
+  <div class="particle" style="left: 40%; top: 62%; animation-delay: 2.5s;"></div>
+  <div class="particle" style="left: 52%; top: 75%; animation-delay: 3.8s; background: #34D399;"></div>
+  <div class="particle" style="left: 65%; top: 65%; animation-delay: 5.1s; background: #A78BFA;"></div>
+  <div class="particle" style="left: 78%; top: 70%; animation-delay: 6.4s;"></div>
+  <div class="particle" style="left: 88%; top: 60%; animation-delay: 0.7s; background: #34D399;"></div>
+  <div class="particle" style="left: 18%; top: 58%; animation-delay: 3.1s;"></div>
+
+  <div class="demo-wrap">
+
+    <!-- Logo -->
+    <div class="logo-area">
+      <div class="logo-mark">M</div>
+      <span class="logo-text">MiniMax Studio</span>
+    </div>
+
+    <!-- Tagline -->
+    <div class="tagline">
+      <span class="accent-cyan">想到</span> 即 <span class="accent-purple">看见</span> &middot;
+      <span class="accent-purple">看见</span> 即 <span class="accent-green">得到</span>
+    </div>
+
+    <!-- Progress track -->
+    <div class="progress-track">
+      <div class="progress-fill"></div>
+      <div class="progress-markers">
+        <div class="progress-dot p1-active"></div>
+        <div class="progress-dot p2-active"></div>
+        <div class="progress-dot p3-active"></div>
+      </div>
+    </div>
+
+    <!-- Three Step Flow -->
+    <div class="steps-row">
+
+      <!-- Energy beam -->
+      <div class="energy-beam" aria-hidden="true">
+        <div class="energy-beam-line"></div>
+      </div>
+
+      <!-- Step 1: Think -->
+      <div class="step-card step-1" id="step1">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Brain / Think icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 01</div>
+          <div class="step-title">想到</div>
+          <div class="step-sub">Think</div>
+          <div class="step-desc">用户想到一个创意，描述脑海中的画面</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Latency ~2s
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow 1 -->
+      <div class="arrow-connector" aria-hidden="true">
+        <div class="arrow-track">
+          <svg class="arrow-svg" viewBox="0 0 56 20">
+            <path class="arrow-path" d="M0 10 L44 10"/>
+            <path class="arrow-travel" d="M0 10 L44 10"/>
+            <polyline class="arrow-travel" points="36,5 44,10 36,15"/>
+          </svg>
+          <div class="arrow-dots">
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+          </div>
+          <div class="arrow-chevron">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M7 4l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: See -->
+      <div class="step-card step-2" id="step2">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Sparkles / AI Generate icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              <path d="M5 3v4"/>
+              <path d="M19 17v4"/>
+              <path d="M3 5h4"/>
+              <path d="M17 19h4"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 02</div>
+          <div class="step-title">看见</div>
+          <div class="step-sub">See</div>
+          <div class="step-desc">AI 生成视觉呈现，将想法变成图像</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Latency 5-30s
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow 2 -->
+      <div class="arrow-connector" aria-hidden="true">
+        <div class="arrow-track">
+          <svg class="arrow-svg" viewBox="0 0 56 20">
+            <path class="arrow-path" d="M0 10 L44 10"/>
+            <path class="arrow-travel" d="M0 10 L44 10"/>
+            <polyline class="arrow-travel" points="36,5 44,10 36,15"/>
+          </svg>
+          <div class="arrow-dots">
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+          </div>
+          <div class="arrow-chevron">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M7 4l6 6-6 6"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Get -->
+      <div class="step-card step-3" id="step3">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Download / Get icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 03</div>
+          <div class="step-title">得到</div>
+          <div class="step-sub">Get</div>
+          <div class="step-desc">获得最终作品，4K 高清下载</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Ready instantly
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom note -->
+    <div class="bottom-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Powered by <span>&nbsp;MiniMax AI &nbsp;&bull;&nbsp; From Thought to Creation in Seconds</span>
+    </div>
+
+  </div>
+
+</body>
+</html>

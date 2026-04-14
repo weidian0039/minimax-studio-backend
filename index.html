@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MiniMax Studio — AI-powered visual creation. 输入创意想法，几秒内生成专业级视觉内容。立即申请内测资格。">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:3001 https://cdn.staging.minimax.studio; frame-ancestors 'none';">
+  <title>MiniMax Studio — 想到即看见，看见即得到</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #263448;
+      --accent: #22D3EE;
+      --accent-light: #67e8f9;
+      --accent-dark: #0891b2;
+      --accent-glow: rgba(34, 211, 238, 0.35);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #334155;
+      --success: #22c55e;
+      --error: #ef4444;
+      --arrow: #475569;
+      --grid-color: rgba(34,211,238,0.04);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    /* ── SKIP NAVIGATION (A-7) ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 16px;
+      z-index: 9999;
+      padding: 12px 24px;
+      background: var(--accent);
+      color: white;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .skip-link:focus { top: 16px; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Static SVG grid background (P-1 — replaces expensive double-gradient) */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Crect width='60' height='60' fill='none'/%3E%3Cpath d='M0 0h60v60' stroke='rgba(124,58,237,0.04)' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── REDUCED MOTION (P-3 / B-3) ── */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .step { opacity: 1 !important; transform: none !important; }
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── NAV ── */
+    nav {
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #06b6d4);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .nav-badge {
+      font-size: 0.7rem;
+      background: var(--accent);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      color: var(--accent-light);
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, var(--accent-light), #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 24px var(--accent-glow);
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(34,211,238,0.4);
+    }
+
+    .cta-btn:active { transform: translateY(0); }
+
+    /* ── THREE STEP FLOW ── */
+    .steps-section {
+      padding: 20px 0 80px;
+    }
+
+    .steps-container {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+
+    .step {
+      flex: 1;
+      max-width: 280px;
+      text-align: center;
+      padding: 32px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease, border-color 0.3s, background 0.3s;
+      will-change: opacity, transform;
+      contain: layout style;
+    }
+
+    .step.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .step:hover {
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+    }
+
+    .step-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 1.5rem;
+    }
+
+    /* A-2: Screen-reader-only text for step icons */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .step-1 .step-icon { background: rgba(34,211,238,0.2); }
+    .step-2 .step-icon { background: rgba(34,197,94,0.2); }
+    .step-3 .step-icon { background: rgba(34,211,238,0.2); }
+
+    .step-num {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .step-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .step-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .step-latency {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.05);
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    /* Arrows between steps */
+    .step-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      font-size: 1.5rem;
+      color: var(--arrow);
+      align-self: center;
+      padding-top: 40px;
+      opacity: 0;
+      transition: opacity 0.6s ease 0.3s;
+    }
+
+    .step-arrow.visible { opacity: 1; }
+
+    /* ── SIGNUP FORM ── */
+    .signup-section {
+      padding: 0 0 80px;
+    }
+
+    .signup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 48px;
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .signup-card h2 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .signup-card p {
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      padding-left: 4px;
+    }
+
+    input[type="email"],
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input[type="email"]:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* A-4 / C-1: Error state styling */
+    input[aria-invalid="true"],
+    textarea[aria-invalid="true"] {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+    }
+
+    .field-error {
+      display: block;
+      color: var(--error);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      text-align: left;
+      padding-left: 4px;
+    }
+
+    /* A-4: Error summary region */
+    .form-error-summary {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      text-align: left;
+      color: var(--error);
+      font-size: 0.875rem;
+    }
+
+    .form-error-summary.show { display: block; }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(124,58,237,0.5);
+    }
+
+    .submit-btn:active { transform: translateY(0); }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* A-1: Success state — aria-live region */
+    .form-success {
+      display: none;
+      text-align: center;
+      padding: 32px 0;
+    }
+
+    .form-success.show { display: block; }
+    .form-fields.hide { display: none; }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(34,197,94,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 1.8rem;
+    }
+
+    .form-success h3 {
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+      color: var(--success);
+    }
+
+    .form-success p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* ── MOBILE RESPONSIVE ── */
+    @media (max-width: 767px) {
+      .hero { padding: 48px 0 40px; }
+      .hero h1 { font-size: 1.9rem; }
+
+      .steps-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .step {
+        max-width: 100%;
+        width: 100%;
+        text-align: left;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px;
+      }
+
+      .step-icon {
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        flex-shrink: 0;
+        font-size: 1.2rem;
+      }
+
+      .step-content { flex: 1; }
+
+      .step-num { margin-bottom: 4px; }
+
+      .step-title { font-size: 1.1rem; margin-bottom: 6px; }
+
+      .step-desc { font-size: 0.85rem; }
+
+      .step-latency { margin-top: 8px; }
+
+      .step-arrow {
+        padding: 0;
+        font-size: 1.2rem;
+        color: var(--arrow);
+        align-self: center;
+      }
+
+      .step-arrow::before {
+        content: '';
+        display: block;
+        width: 2px;
+        height: 16px;
+        background: var(--arrow);
+        margin: 0 auto;
+      }
+
+      .step-arrow span { display: none; }
+
+      .signup-card { padding: 28px 20px; }
+
+      .cta-btn { padding: 12px 24px; font-size: 0.95rem; }
+    }
+
+    @media (max-width: 900px) {
+      .steps-container { gap: 0; }
+      .step-arrow {
+        padding-top: 0;
+        font-size: 1.2rem;
+      }
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+
+    /* ── NAV ACTIONS ── */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-login {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-login:hover { color: var(--accent); }
+    .nav-register {
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #0f172a;
+      text-decoration: none;
+      padding: 6px 16px;
+      border-radius: var(--radius-md);
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 12px var(--accent-glow);
+    }
+    .nav-register:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(34,211,238,0.4);
+    }
+    .logo-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* ── HERO SECONDARY CTA ── */
+    .hero-secondary-cta {
+      margin-top: 14px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+    .hero-login-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+    .hero-login-link:hover { text-decoration: underline; }
+
+    /* ── DEMO SHOWCASE ── */
+    .demo-section {
+      padding: 40px 0 80px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+    .section-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .demo-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .demo-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+    .demo-img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .gradient-demo-1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .gradient-demo-2 { background: linear-gradient(135deg, #f093fb, #4facfe); }
+    .gradient-demo-3 { background: linear-gradient(135deg, #ffffff, #f0f0f0); }
+    .demo-emoji {
+      font-size: 2.5rem;
+      opacity: 0.8;
+    }
+    .gradient-demo-3 .demo-emoji { color: #0f172a; opacity: 0.6; }
+    .demo-card-body {
+      padding: 16px;
+    }
+    .demo-card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text-primary);
+    }
+    .demo-card-prompt {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .demo-card-tag {
+      font-size: 0.7rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .demo-cta {
+      text-align: center;
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .cta-btn-sm {
+      padding: 10px 24px;
+      font-size: 0.9rem;
+    }
+    .demo-more-link {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .demo-more-link:hover { color: var(--accent); }
+
+    .generating .step-icon {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* ── RESPONSIVE: iPhone 12 (390px) and SE (375px) ── */
+    @media (max-width: 480px) {
+      .nav-actions { gap: 8px; }
+      .nav-login { font-size: 0.78rem; }
+      .nav-register { font-size: 0.78rem; padding: 5px 12px; }
+      .hero { padding: 40px 0 32px; }
+      .hero h1 { font-size: 1.7rem; }
+      .hero-subtitle { font-size: 0.9rem; }
+      .cta-btn { padding: 12px 20px; font-size: 0.95rem; }
+      .cta-btn-sm { padding: 10px 20px; font-size: 0.875rem; }
+      .hero-secondary-cta { font-size: 0.8rem; }
+      .signup-card { padding: 24px 16px; }
+      .demo-section { padding: 32px 0 60px; }
+      .demo-grid { grid-template-columns: 1fr; gap: 16px; padding: 0 16px; }
+      .section-title { font-size: 1.4rem; }
+      .section-subtitle { font-size: 0.8rem; }
+      .demo-cta { margin-top: 24px; }
+      .step { padding: 16px; }
+      .step-title { font-size: 1.05rem; }
+      .step-desc { font-size: 0.82rem; }
+    }
+
+    @media (max-width: 390px) {
+      .signup-card { padding: 20px 14px; }
+      .hero h1 { font-size: 1.6rem; }
+      .hero { padding: 36px 0 28px; }
+      .cta-btn { padding: 10px 16px; font-size: 0.9rem; }
+      .cta-btn-sm { padding: 8px 16px; font-size: 0.85rem; }
+      .step { padding: 14px; }
+      .step-icon { width: 40px; height: 40px; }
+      .step-title { font-size: 1rem; }
+      .step-desc { font-size: 0.8rem; }
+      .signup-card h2 { font-size: 1.4rem; }
+      .form-group label { font-size: 0.75rem; }
+      input[type="email"], textarea { font-size: 0.9rem; padding: 10px 14px; }
+      .submit-btn { font-size: 0.9rem; padding: 12px; }
+      .demo-cta { gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- A-7: Skip navigation link -->
+  <a href="#signup" class="skip-link">跳转到注册 / Skip to sign up</a>
+
+  <!-- NAV -->
+  <nav>
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="logo">
+        <a href="index.html" class="logo-link">
+          <div class="logo-icon">M</div>
+          <span>MiniMax Studio</span>
+        </a>
+      </div>
+      <span class="nav-badge">Beta</span>
+      <div class="nav-actions">
+        <a href="auth.html" class="nav-login">登录 Login</a>
+        <a href="auth.html" class="nav-register">注册 Register</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-badge">
+        <span style="font-size:0.8rem;">&#9733;</span>
+        AI-Powered Visual Creation
+      </div>
+      <h1>
+        Think it. <span class="gradient-text">See it.</span><br>
+        Get it.
+      </h1>
+      <p class="hero-subtitle">
+        输入你的创意想法，AI 在几秒内生成专业级视觉内容。<br>
+        从想到到看见，只需一个点击。
+      </p>
+      <a href="#signup" class="cta-btn">
+        <span>&#9889;</span>
+        立即开始 Start Now
+      </a>
+      <div class="hero-secondary-cta">
+        <span>已有账号?</span>
+        <a href="auth.html" class="hero-login-link">登录 Login</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEMO SHOWCASE -->
+  <section class="demo-section" id="demos">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">AI 创作示例 AI Creation Samples</h2>
+        <p class="section-subtitle">看看用户们用 MiniMax Studio 生成了什么精彩作品</p>
+      </div>
+      <div class="demo-grid">
+        <article class="demo-card">
+          <div class="demo-img gradient-demo-1" aria-hidden="true">
+            <span class="demo-emoji">&#127916;</span>
+          </div>
+          <div class="demo-card-body">
+            <h3 class="demo-card-title">赛博朋克城市夜景</h3>
+            <p class="demo-card-prompt">Cyberpunk city night scene with neon lights and towering skyscrapers</p>
+            <span class="demo-card-tag">&#128247; Digital Art</span>
+          </div>
+        </article>
+        <article class="demo-card">
+          <div class="demo-img gradient-demo-2" aria-hidden="true">
+            <span class="demo-emoji">&#127804;</span>
+          </div>
+          <div class="demo-card-body">
+            <h3 class="demo-card-title">水彩山水风景</h3>
+            <p class="demo-card-prompt">Chinese landscape painting with watercolor technique, misty mountains</p>
+            <span class="demo-card-tag">&#127912; Watercolor</span>
+          </div>
+        </article>
+        <article class="demo-card">
+          <div class="demo-img gradient-demo-3" aria-hidden="true">
+            <span class="demo-emoji">&#128188;</span>
+          </div>
+          <div class="demo-card-body">
+            <h3 class="demo-card-title">极简品牌海报</h3>
+            <p class="demo-card-prompt">Minimalist product poster, white background, orange accent, modern typography</p>
+            <span class="demo-card-tag">&#128179; Branding</span>
+          </div>
+        </article>
+      </div>
+      <div class="demo-cta">
+        <a href="dashboard.html" class="cta-btn cta-btn-sm">
+          <span>&#8594;</span>
+          尝试生成 Try it now
+        </a>
+        <a href="#signup" class="demo-more-link">查看更多作品 View more examples &#8594;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- THREE STEP FLOW -->
+  <section class="steps-section">
+    <div class="container">
+      <div class="steps-container">
+
+        <div class="step step-1" data-step="1">
+          <!-- A-2: aria-hidden on decorative icon + sr-only label -->
+          <div class="step-icon" aria-hidden="true">
+            &#9998;
+            <span class="sr-only">创意输入</span>
+          </div>
+          <div class="step-content">
+            <div class="step-num">Step 01</div>
+            <div class="step-title">想到</div>
+            <div class="step-desc">Type your creative idea into the input box. Describe anything you imagine.</div>
+            <span class="step-latency">Latency: ~2s</span>
+          </div>
+        </div>
+
+        <div class="step-arrow" aria-hidden="true">
+          <span>&#8594;</span>
+        </div>
+
+        <div class="step step-2" data-step="2">
+          <div class="step-icon" aria-hidden="true">
+            &#128065;
+            <span class="sr-only">AI生成视觉</span>
+          </div>
+          <div class="step-content">
+            <div class="step-num">Step 02</div>
+            <div class="step-title">看见</div>
+            <div class="step-desc">AI generates stunning visuals based on your description in seconds.</div>
+            <span class="step-latency">Latency: 5-30s</span>
+          </div>
+        </div>
+
+        <div class="step-arrow" aria-hidden="true">
+          <span>&#8594;</span>
+        </div>
+
+        <div class="step step-3" data-step="3">
+          <div class="step-icon" aria-hidden="true">
+            &#11014;
+            <span class="sr-only">下载获取</span>
+          </div>
+          <div class="step-content">
+            <div class="step-num">Step 03</div>
+            <div class="step-title">得到</div>
+            <div class="step-desc">Download your creation in 4K quality. Use anywhere, share freely.</div>
+            <span class="step-latency">Ready instantly</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNUP FORM -->
+  <section class="signup-section" id="signup">
+    <div class="container">
+      <div class="signup-card">
+
+        <div class="form-fields">
+          <h2>&#128075; 加入我们</h2>
+          <p>成为首批体验用户，获取内测资格</p>
+
+          <!-- C-1 / A-4: Error summary region above form -->
+          <div class="form-error-summary" id="formErrorSummary" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+          <form id="ideaForm" novalidate>
+            <div class="form-group">
+              <label for="email">邮箱地址</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="your@email.com"
+                autocomplete="email"
+                required
+                aria-describedby="email-error"
+              >
+              <span class="field-error" id="email-error" role="alert" style="display:none"></span>
+            </div>
+            <div class="form-group">
+              <label for="idea">你的创意想法</label>
+              <textarea
+                id="idea"
+                name="idea"
+                placeholder="描述你想要生成的视觉内容... 例如：一张赛博朋克风格的城市夜景，配有霓虹灯光"
+                required
+                aria-describedby="idea-error"
+                maxlength="500"
+              ></textarea>
+              <span class="field-error" id="idea-error" role="alert" style="display:none"></span>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">提交想法 Submit</button>
+          </form>
+        </div>
+
+        <!-- A-1: Success region with aria-live -->
+        <div class="form-success" id="formSuccess" role="status" aria-live="polite" aria-atomic="true">
+          <div class="success-icon" aria-hidden="true">&#10003;</div>
+          <h3>排队中，我们会联系你</h3>
+          <p>感谢你的提交！我们的团队将尽快与您联系。</p>
+          <p style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);">Ref: <span id="refId"></span></p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container">
+      &copy; 2026 MiniMax Studio. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    // ── HELPERS ──────────────────────────────────────────────────────────────
+
+    /**
+     * Show an inline field error.
+     * @param {string} fieldId - ID of the input/textarea
+     * @param {string} message - Human-readable error message
+     */
+    function showFieldError(fieldId, message) {
+      const input = document.getElementById(fieldId);
+      const errorEl = document.getElementById(fieldId + '-error');
+      input.setAttribute('aria-invalid', 'true');
+      if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+      }
+    }
+
+    /** Clear error state from a field. */
+    function clearFieldError(fieldId) {
+      const input = document.getElementById(fieldId);
+      const errorEl = document.getElementById(fieldId + '-error');
+      input.removeAttribute('aria-invalid');
+      input.style.borderColor = '';
+      if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.style.display = 'none';
+      }
+    }
+
+    /** Show or update the form-level error summary. */
+    function showFormError(message) {
+      const summary = document.getElementById('formErrorSummary');
+      summary.textContent = message;
+      summary.classList.add('show');
+    }
+
+    function clearFormError() {
+      const summary = document.getElementById('formErrorSummary');
+      summary.textContent = '';
+      summary.classList.remove('show');
+    }
+
+    /** Generate a cryptographically random reference ID suffix (S-4). */
+    function generateRefId() {
+      const suffix = crypto.getRandomValues(new Uint8Array(4));
+      const hex = Array.from(suffix).map(b => b.toString(16).padStart(2, '0')).join('');
+      return 'MMS-' + Date.now().toString(36).toUpperCase() + '-' + hex.toUpperCase();
+    }
+
+    // ── SCROLL-REVEAL ANIMATIONS ─────────────────────────────────────────────
+
+    const steps = document.querySelectorAll('.step');
+    const arrows = document.querySelectorAll('.step-arrow');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const stepEl = entry.target;
+          const stepNum = parseInt(stepEl.dataset.step);
+          stepEl.classList.add('visible');
+          if (arrows[stepNum - 1]) arrows[stepNum - 1].classList.add('visible');
+        }
+      });
+    }, { threshold: 0.3 });
+
+    steps.forEach(step => observer.observe(step));
+
+    // Immediately trigger first step above the fold (not triggered by scroll)
+    setTimeout(() => {
+      steps[0].classList.add('visible');
+      arrows[0].classList.add('visible');
+    }, 400);
+
+    // ── SMOOTH SCROLL FOR CTA ─────────────────────────────────────────────────
+
+    document.querySelector('.cta-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('signup').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // ── FORM VALIDATION & SUBMISSION ─────────────────────────────────────────
+
+    const form = document.getElementById('ideaForm');
+    const formFields = document.querySelector('.form-fields');
+    const formSuccess = document.getElementById('formSuccess');
+    const refIdEl = document.getElementById('refId');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Clear error on focus (remove red border + error text)
+    ['email', 'idea'].forEach(id => {
+      document.getElementById(id).addEventListener('focus', () => {
+        clearFieldError(id);
+        clearFormError();
+      });
+    });
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      clearFormError();
+
+      const email = document.getElementById('email').value.trim();
+      const idea = document.getElementById('idea').value.trim();
+
+      // Collect validation errors for summary
+      const errors = [];
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showFieldError('email', '请输入有效的邮箱地址，例如：your@email.com');
+        errors.push('邮箱地址无效');
+      }
+
+      if (!idea || idea.length < 5) {
+        showFieldError('idea', '创意描述至少需要 5 个字符');
+        errors.push('创意描述太短');
+      }
+
+      if (idea && idea.length > 500) {
+        showFieldError('idea', '创意描述不能超过 500 个字符');
+        errors.push('创意描述超出字数限制');
+      }
+
+      if (errors.length > 0) {
+        showFormError('请修正以下问题：' + errors.join('、') + '。');
+        return;
+      }
+
+      // ── BACKEND INTEGRATION (Task 2) ──────────────────────────────────────
+      // POST to http://localhost:3001/api/ideas
+      // Request body: { email, idea_text } (field name: idea_text per architecture)
+
+      submitBtn.textContent = '提交中...';
+      submitBtn.disabled = true;
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch('http://localhost:3001/api/ideas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            idea_text: idea,   // Backend expects 'idea_text', not 'idea'
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.status === 201) {
+          // Handle 201: display reference ID from {id, referenceId}
+          const data = await response.json();
+          refIdEl.textContent = data.referenceId || data.id || generateRefId();
+          formFields.classList.add('hide');
+          formSuccess.classList.add('show');
+        } else if (response.status === 400) {
+          // Handle 400: validation error from backend
+          const errData = await response.json().catch(() => ({}));
+          const msg = errData.message || errData.error || '提交内容不符合要求，请检查后重试。';
+          showFormError(msg);
+          submitBtn.textContent = '提交想法 Submit';
+          submitBtn.disabled = false;
+        } else {
+          // Handle other error codes (500, etc.)
+          throw new Error('Server returned ' + response.status);
+        }
+      } catch (err) {
+        // Handle network failure or timeout
+        const isTimeout = err.name === 'AbortError';
+        const message = isTimeout
+          ? '请求超时，请检查网络后重试。'
+          : '网络错误，请确保后端服务（http://localhost:3001）已启动，或稍后重试。';
+        showFormError(message);
+        submitBtn.textContent = '提交想法 Submit';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

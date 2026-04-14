@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MiniMax Studio — 我的创意">
+  <title>我的创意 My Ideas — MiniMax Studio</title>
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">跳转到主要内容 Skip to main content</a>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-container">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">M</div>
+        <span>MiniMax Studio</span>
+      </a>
+      <div class="nav-user">
+        <span class="nav-user-email" id="navUserEmail">Loading...</span>
+        <button class="nav-logout" id="logoutBtn" type="button">退出 Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main id="main-content">
+    <div class="dashboard-container">
+
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <div class="dashboard-title-row">
+          <h1 class="dashboard-title">我的创意 My Ideas</h1>
+          <button class="btn-primary" id="newIdeaBtn" type="button">
+            <span>+</span> 新建想法 New Idea
+          </button>
+        </div>
+        <p class="dashboard-subtitle">查看和管理你的创意想法 Track and manage your creative ideas</p>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="stats-bar" id="statsBar" aria-label="统计 Statistics">
+        <div class="stat-box">
+          <span class="stat-count" id="statTotal">--</span>
+          <span class="stat-label">总计 Total</span>
+        </div>
+        <div class="stat-box stat-pending">
+          <span class="stat-count" id="statPending">--</span>
+          <span class="stat-label">等待中 Pending</span>
+        </div>
+        <div class="stat-box stat-processing">
+          <span class="stat-count" id="statProcessing">--</span>
+          <span class="stat-label">生成中 Processing</span>
+        </div>
+        <div class="stat-box stat-completed">
+          <span class="stat-count" id="statCompleted">--</span>
+          <span class="stat-label">已完成 Completed</span>
+        </div>
+        <div class="stat-box stat-failed">
+          <span class="stat-count" id="statFailed">--</span>
+          <span class="stat-label">失败 Failed</span>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="ideas-loading" id="ideasLoading" aria-live="polite">
+        <div class="skeleton-grid">
+          <div class="skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text short"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text short"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-img"></div>
+            <div class="skeleton-text"></div>
+            <div class="skeleton-text short"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Banner -->
+      <div class="error-banner" id="errorBanner" role="alert" aria-live="assertive" hidden>
+        <span id="errorBannerMsg">加载失败，请重试 Loading failed. Please retry.</span>
+        <button class="error-retry" id="errorRetryBtn" type="button">重试 Retry</button>
+      </div>
+
+      <!-- Ideas Grid -->
+      <div class="ideas-grid" id="ideasGrid" role="feed" aria-label="创意列表 Ideas" hidden></div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState" hidden>
+        <div class="empty-icon">&#127912;</div>
+        <h2>还没有创意 No ideas yet</h2>
+        <p>提交你的第一个创意想法，开始生成 AI 视觉内容！</p>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Submit your first idea to start generating AI visuals!</p>
+        <button class="btn-primary" id="emptyNewIdeaBtn" type="button" style="margin-top:20px;max-width:240px;">
+          <span>+</span> 新建想法 New Idea
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- New Idea Modal -->
+  <div class="modal-overlay" id="newIdeaModal" hidden>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">新建想法 New Idea</h2>
+        <button class="modal-close" id="modalCloseBtn" type="button" aria-label="关闭 Close">&#10005;</button>
+      </div>
+      <form id="newIdeaForm" novalidate>
+        <div class="form-group">
+          <label for="newIdeaText">你的创意想法 Your Idea</label>
+          <textarea
+            id="newIdeaText"
+            name="idea_text"
+            placeholder="描述你想要生成的视觉内容... 例如：一张赛博朋克风格的城市夜景"
+            required
+            maxlength="500"
+            aria-describedby="newIdeaText-error newIdeaCharCount"
+          ></textarea>
+          <span class="field-error" id="newIdeaText-error" role="alert" hidden></span>
+          <span class="char-count" id="newIdeaCharCount">0 / 500</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="modalCancelBtn">取消 Cancel</button>
+          <button type="submit" class="btn-primary" id="modalSubmitBtn">提交 Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      &copy; 2026 MiniMax Studio. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

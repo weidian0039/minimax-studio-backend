@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission Demo — 想到即看见，看见即得到</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8fafc;
+      --bg-card: #e2e8f0;
+      --bg-card-hover: #cbd5e1;
+      --accent: #3B82F6;
+      --accent-dim: rgba(59, 130, 246, 0.08);
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --accent-darker: #2563eb;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: rgba(59, 130, 246, 0.12);
+      --border-bright: rgba(59, 130, 246, 0.3);
+      --step1-color: #3B82F6;
+      --step2-color: #8B5CF6;
+      --step3-color: #10B981;
+      --grid-color: rgba(59, 130, 246, 0.04);
+      --glow-color: rgba(59, 130, 246, 0.06);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    /* ── AMBIENT BACKGROUND ── */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .bg-glow-center {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--glow-color) 0%, transparent 70%);
+      pointer-events: none;
+      animation: bgPulse 6s ease-in-out infinite;
+    }
+
+    @keyframes bgPulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* ── DEMO CONTAINER ── */
+    .demo-wrap {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 960px;
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    /* ── LOGO ── */
+    .logo-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      opacity: 0;
+      transform: translateY(-12px);
+      animation: fadeSlideDown 0.8s ease-out 0.3s forwards;
+    }
+
+    @keyframes fadeSlideDown {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-mark {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--step2-color));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo-mark::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent);
+      border-radius: 12px;
+    }
+
+    .logo-text {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    /* ── TAGLINE ── */
+    .tagline {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out 0.7s forwards;
+    }
+
+    .tagline .accent-blue { color: var(--step1-color); }
+    .tagline .accent-purple { color: var(--step2-color); }
+    .tagline .accent-green { color: var(--step3-color); }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    /* ── CTA BUTTON ── */
+    .cta-wrap {
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 1.0s forwards;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-darker));
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+      letter-spacing: 0.01em;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.45);
+    }
+
+    .cta-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .cta-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ── STEPS ROW ── */
+    .steps-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+    }
+
+    /* ── INDIVIDUAL STEP CARD ── */
+    .step-card {
+      flex: 1;
+      max-width: 240px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(28px) scale(0.95);
+    }
+
+    .step-card:nth-child(1) { animation: stepReveal 0.7s ease-out 1.2s forwards; }
+    .step-card:nth-child(3) { animation: stepReveal 0.7s ease-out 2.4s forwards; }
+    .step-card:nth-child(5) { animation: stepReveal 0.7s ease-out 3.6s forwards; }
+
+    @keyframes stepReveal {
+      0% { opacity: 0; transform: translateY(28px) scale(0.95); }
+      60% { opacity: 1; transform: translateY(-4px) scale(1.02); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .card-inner {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .card-inner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--step-color), transparent);
+      opacity: 0.7;
+    }
+
+    .card-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at top, var(--card-glow), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+
+    .step-card:hover .card-inner,
+    .step-card.active .card-inner {
+      border-color: var(--border-bright);
+      background: var(--bg-card-hover);
+      box-shadow: 0 8px 32px var(--card-glow);
+    }
+
+    .step-card:hover .card-inner::after,
+    .step-card.active .card-inner::after {
+      opacity: 1;
+    }
+
+    /* Icon ring */
+    .icon-ring {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.7rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .icon-ring::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 22px;
+      background: var(--icon-ring-bg);
+      opacity: 0.5;
+      animation: iconRingPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes iconRingPulse {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.08); }
+    }
+
+    /* SVG icons */
+    .icon-ring svg {
+      width: 32px;
+      height: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step number badge */
+    .step-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step title */
+    .step-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+      letter-spacing: -0.02em;
+    }
+
+    /* Step subtitle (English) */
+    .step-sub {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Step description */
+    .step-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Latency chip */
+    .latency-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 14px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.04);
+      border: 1px solid rgba(0,0,0,0.06);
+      padding: 4px 10px;
+      border-radius: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .latency-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--step-color);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── ARROWS ── */
+    .arrow-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+      padding: 0 12px;
+      position: relative;
+    }
+
+    .arrow-connector:nth-child(2) { opacity: 0; animation: arrowReveal 0.5s ease-out 1.9s forwards; }
+    .arrow-connector:nth-child(4) { opacity: 0; animation: arrowReveal 0.5s ease-out 3.1s forwards; }
+
+    @keyframes arrowReveal {
+      to { opacity: 1; }
+    }
+
+    .arrow-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Flowing arrow line */
+    .arrow-line {
+      width: 56px;
+      height: 3px;
+      background: rgba(59, 130, 246, 0.15);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arrow-line::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      border-radius: 2px;
+      animation: flowRight 1.5s ease-in-out infinite;
+    }
+
+    .arrow-connector:nth-child(4) .arrow-line::before {
+      animation-delay: 1.2s;
+      background: linear-gradient(90deg, transparent, var(--step2-color), transparent);
+    }
+
+    @keyframes flowRight {
+      0% { left: -100%; }
+      100% { left: 200%; }
+    }
+
+    /* Arrow dots */
+    .arrow-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .arrow-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: dotPulse 1.5s ease-in-out infinite;
+    }
+
+    .arrow-dot:nth-child(2) { animation-delay: 0.2s; }
+    .arrow-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    .arrow-connector:nth-child(4) .arrow-dot {
+      background: var(--step2-color);
+      animation-delay: 1.2s;
+    }
+    .arrow-connector:nth-child(4) .arrow-dot:nth-child(2) { animation-delay: 1.4s; }
+    .arrow-connector:nth-child(4) .arrow-dot:nth-child(3) { animation-delay: 1.6s; }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* Arrow chevron */
+    .arrow-chevron {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      opacity: 0.5;
+    }
+
+    /* ── STEP COLORS ── */
+    /* Step 1 */
+    .step-card.step-1 { --step-color: var(--step1-color); --card-glow: rgba(59, 130, 246, 0.12); }
+    .step-card.step-1 .icon-ring { background: rgba(59, 130, 246, 0.1); }
+    .step-card.step-1 .icon-ring svg { color: var(--step1-color); }
+    .step-card.step-1 .step-title { color: var(--step1-color); }
+    .step-card.step-1 .icon-ring::before { background: rgba(59, 130, 246, 0.1); }
+    .step-card.step-1 .latency-dot { background: var(--step1-color); }
+
+    /* Step 2 */
+    .step-card.step-2 { --step-color: var(--step2-color); --card-glow: rgba(139, 92, 246, 0.12); }
+    .step-card.step-2 .icon-ring { background: rgba(139, 92, 246, 0.1); }
+    .step-card.step-2 .icon-ring svg { color: var(--step2-color); }
+    .step-card.step-2 .step-title { color: var(--step2-color); }
+    .step-card.step-2 .icon-ring::before { background: rgba(139, 92, 246, 0.1); }
+    .step-card.step-2 .latency-dot { background: var(--step2-color); }
+    .step-card.step-2 .arrow-line::before { display: none; }
+
+    /* Step 3 */
+    .step-card.step-3 { --step-color: var(--step3-color); --card-glow: rgba(16, 185, 129, 0.12); }
+    .step-card.step-3 .icon-ring { background: rgba(16, 185, 129, 0.1); }
+    .step-card.step-3 .icon-ring svg { color: var(--step3-color); }
+    .step-card.step-3 .step-title { color: var(--step3-color); }
+    .step-card.step-3 .icon-ring::before { background: rgba(16, 185, 129, 0.1); }
+    .step-card.step-3 .latency-dot { background: var(--step3-color); }
+
+    /* ── ACTIVE STEP HIGHLIGHT (looping) ── */
+    .step-card.step-1.active { animation: none; opacity: 1; transform: translateY(0) scale(1); }
+    .step-card.step-2.active { animation: none; opacity: 1; transform: translateY(0) scale(1); }
+    .step-card.step-3.active { animation: none; opacity: 1; transform: translateY(0) scale(1); }
+
+    .step-card.step-1.active { animation: stepActive1 7s ease-in-out infinite, stepGlow1 7s ease-in-out infinite; }
+    .step-card.step-2.active { animation: stepActive2 7s ease-in-out infinite, stepGlow2 7s ease-in-out infinite; }
+    .step-card.step-3.active { animation: stepActive3 7s ease-in-out infinite, stepGlow3 7s ease-in-out infinite; }
+
+    @keyframes stepActive1 {
+      0%, 100% { transform: scale(1); }
+      14%, 28% { transform: scale(1.04); }
+      42%, 100% { transform: scale(1); }
+    }
+    @keyframes stepActive2 {
+      0%, 35% { transform: scale(1); }
+      42%, 56% { transform: scale(1.04); }
+      63%, 100% { transform: scale(1); }
+    }
+    @keyframes stepActive3 {
+      0%, 57% { transform: scale(1); }
+      63%, 77% { transform: scale(1.04); }
+      84%, 100% { transform: scale(1); }
+    }
+
+    @keyframes stepGlow1 {
+      0%, 100% { filter: brightness(1); }
+      14%, 28% { filter: brightness(1.08); }
+      42%, 100% { filter: brightness(1); }
+    }
+    @keyframes stepGlow2 {
+      0%, 35% { filter: brightness(1); }
+      42%, 56% { filter: brightness(1.08); }
+      63%, 100% { filter: brightness(1); }
+    }
+    @keyframes stepGlow3 {
+      0%, 57% { filter: brightness(1); }
+      63%, 77% { filter: brightness(1.08); }
+      84%, 100% { filter: brightness(1); }
+    }
+
+    /* Arrow active states */
+    .arrow-connector:nth-child(2).active { animation: arrowActive1 7s ease-in-out infinite; }
+    .arrow-connector:nth-child(4).active { animation: arrowActive2 7s ease-in-out infinite; }
+
+    @keyframes arrowActive1 {
+      0%, 100% { opacity: 0.6; }
+      28% { opacity: 1; }
+      42%, 100% { opacity: 0.6; }
+    }
+    @keyframes arrowActive2 {
+      0%, 56% { opacity: 0.6; }
+      70% { opacity: 1; }
+      84%, 100% { opacity: 0.6; }
+    }
+
+    /* ── BOTTOM TAGLINE ── */
+    .bottom-note {
+      margin-top: 40px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 4.5s forwards;
+    }
+
+    .bottom-note svg {
+      width: 14px;
+      height: 14px;
+      color: var(--accent);
+    }
+
+    .bottom-note span {
+      color: var(--text-secondary);
+    }
+
+    /* ── PARTICLES (subtle, light theme) ── */
+    .particle {
+      position: fixed;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0;
+      pointer-events: none;
+      animation: particleFloat 6s ease-in-out infinite;
+    }
+
+    @keyframes particleFloat {
+      0% { opacity: 0; transform: translateY(0) scale(0); }
+      20% { opacity: 0.5; transform: translateY(-20px) scale(1); }
+      80% { opacity: 0.2; transform: translateY(-60px) scale(0.6); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 767px) {
+      .steps-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+      }
+      .step-card {
+        max-width: 300px;
+        width: 100%;
+      }
+      .step-card:nth-child(1),
+      .step-card:nth-child(3),
+      .step-card:nth-child(5) {
+        animation: stepRevealMobile 0.7s ease-out forwards;
+      }
+      .step-card:nth-child(1) { animation-delay: 1.2s; }
+      .step-card:nth-child(3) { animation-delay: 2.4s; }
+      .step-card:nth-child(5) { animation-delay: 3.6s; }
+
+      @keyframes stepRevealMobile {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .arrow-connector {
+        padding: 8px 0;
+        transform: rotate(90deg);
+      }
+      .arrow-connector:nth-child(2),
+      .arrow-connector:nth-child(4) {
+        animation: arrowRevealMobile 0.5s ease-out forwards;
+      }
+      .arrow-connector:nth-child(2) { animation-delay: 1.9s; }
+      .arrow-connector:nth-child(4) { animation-delay: 3.1s; }
+
+      @keyframes arrowRevealMobile {
+        to { opacity: 1; }
+      }
+
+      .cta-wrap {
+        margin-bottom: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow-center"></div>
+
+  <!-- Particles -->
+  <div class="particle" style="left: 15%; top: 70%; animation-delay: 0s;"></div>
+  <div class="particle" style="left: 30%; top: 75%; animation-delay: 1s; background: #8B5CF6;"></div>
+  <div class="particle" style="left: 50%; top: 65%; animation-delay: 2s;"></div>
+  <div class="particle" style="left: 70%; top: 72%; animation-delay: 3s; background: #10B981;"></div>
+  <div class="particle" style="left: 85%; top: 68%; animation-delay: 4s; background: #8B5CF6;"></div>
+
+  <div class="demo-wrap">
+
+    <!-- Logo -->
+    <div class="logo-area">
+      <div class="logo-mark">M</div>
+      <span class="logo-text">MiniMax Studio</span>
+    </div>
+
+    <!-- Tagline -->
+    <div class="tagline">
+      <span class="accent-blue">想到</span> 即 <span class="accent-purple">看见</span> &middot;
+      <span class="accent-purple">看见</span> 即 <span class="accent-green">得到</span>
+    </div>
+
+    <!-- CTA Button -->
+    <div class="cta-wrap">
+      <a href="#" class="cta-btn" id="ctaBtn">
+        立即开始
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+
+    <!-- Three Step Flow -->
+    <div class="steps-row">
+
+      <!-- Step 1: Think -->
+      <div class="step-card step-1" id="step1">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Brain / Think icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/>
+              <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 01</div>
+          <div class="step-title">想到</div>
+          <div class="step-sub">Think</div>
+          <div class="step-desc">用户想到一个创意，描述脑海中的画面</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Latency ~2s
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow 1 -->
+      <div class="arrow-connector" aria-hidden="true">
+        <div class="arrow-track">
+          <div class="arrow-line"></div>
+          <div class="arrow-dots">
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+          </div>
+          <div class="arrow-chevron">&#8250;</div>
+        </div>
+      </div>
+
+      <!-- Step 2: See -->
+      <div class="step-card step-2" id="step2">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Sparkles / AI Generate icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              <path d="M5 3v4"/>
+              <path d="M19 17v4"/>
+              <path d="M3 5h4"/>
+              <path d="M17 19h4"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 02</div>
+          <div class="step-title">看见</div>
+          <div class="step-sub">See</div>
+          <div class="step-desc">AI 生成视觉呈现，将想法变成图像</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Latency 5-30s
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow 2 -->
+      <div class="arrow-connector" aria-hidden="true">
+        <div class="arrow-track">
+          <div class="arrow-line"></div>
+          <div class="arrow-dots">
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+            <div class="arrow-dot"></div>
+          </div>
+          <div class="arrow-chevron">&#8250;</div>
+        </div>
+      </div>
+
+      <!-- Step 3: Get -->
+      <div class="step-card step-3" id="step3">
+        <div class="card-inner">
+          <div class="icon-ring">
+            <!-- Download / Get icon -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </div>
+          <div class="step-badge">Step 03</div>
+          <div class="step-title">得到</div>
+          <div class="step-sub">Get</div>
+          <div class="step-desc">获得最终作品，4K 高清下载</div>
+          <div class="latency-chip">
+            <span class="latency-dot"></span>
+            Ready instantly
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom note -->
+    <div class="bottom-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+      </svg>
+      Powered by <span>&nbsp;MiniMax AI &nbsp;&bull;&nbsp; From Thought to Creation in Seconds</span>
+    </div>
+
+  </div>
+
+  <script>
+    // After intro animations settle, add active classes for looping highlights
+    setTimeout(() => {
+      document.getElementById('step1').classList.add('active');
+      document.getElementById('step2').classList.add('active');
+      document.getElementById('step3').classList.add('active');
+      document.querySelectorAll('.arrow-connector').forEach(el => el.classList.add('active'));
+    }, 4500);
+
+    // CTA click feedback
+    document.getElementById('ctaBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      this.style.transform = 'scale(0.95)';
+      this.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.25)';
+      setTimeout(() => {
+        this.style.transform = '';
+        this.style.boxShadow = '';
+        // Placeholder for actual CTA action
+        alert('立即开始！\nMiniMax Studio — 想到即看见，看见即得到');
+      }, 150);
+    });
+  </script>
+
+</body>
+</html>

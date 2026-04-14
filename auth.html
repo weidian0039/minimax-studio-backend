@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MiniMax Studio — 登录或注册你的账户">
+  <title>登录 / 注册 — MiniMax Studio</title>
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">跳转到主要内容 Skip to main content</a>
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-container">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">M</div>
+        <span>MiniMax Studio</span>
+      </a>
+      <a href="index.html" class="nav-back">
+        <span>&#8592;</span> 返回首页 Back to Home
+      </a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main id="main-content">
+    <div class="auth-container">
+      <div class="auth-card">
+        <!-- Logo / Branding -->
+        <div class="auth-header">
+          <div class="auth-logo-icon">M</div>
+          <h1 class="auth-title" id="authTitle">登录 Login</h1>
+          <p class="auth-subtitle" id="authSubtitle">欢迎回来！请登录你的账户 Welcome back!</p>
+        </div>
+
+        <!-- Form Error Summary -->
+        <div class="form-error-summary" id="formErrorSummary" role="alert" aria-live="assertive" aria-atomic="true" hidden></div>
+
+        <!-- ── LOGIN FORM ── -->
+        <form id="loginForm" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="loginEmail">邮箱地址 Email</label>
+            <input
+              type="email"
+              id="loginEmail"
+              name="email"
+              placeholder="your@email.com"
+              autocomplete="email"
+              required
+              aria-describedby="loginEmail-error"
+            >
+            <span class="field-error" id="loginEmail-error" role="alert" hidden></span>
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">密码 Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="loginPassword"
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+                aria-describedby="loginPassword-error"
+              >
+              <button type="button" class="password-toggle" id="loginPasswordToggle" aria-label="显示密码 Show password">
+                <span class="eye-icon" id="loginEyeIcon">&#128065;</span>
+              </button>
+            </div>
+            <span class="field-error" id="loginPassword-error" role="alert" hidden></span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="loginBtn">登录 Login</button>
+          </div>
+
+          <div class="form-footer-links">
+            <a href="#forgot" id="forgotLink" class="forgot-link">忘记密码? Forgot Password?</a>
+          </div>
+        </form>
+
+        <!-- ── REGISTER FORM ── -->
+        <form id="registerForm" class="auth-form" novalidate hidden>
+          <div class="form-group">
+            <label for="regEmail">邮箱地址 Email</label>
+            <input
+              type="email"
+              id="regEmail"
+              name="email"
+              placeholder="your@email.com"
+              autocomplete="email"
+              required
+              aria-describedby="regEmail-error"
+            >
+            <span class="field-error" id="regEmail-error" role="alert" hidden></span>
+          </div>
+
+          <div class="form-group">
+            <label for="regPassword">密码 Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="regPassword"
+                name="password"
+                placeholder="Min 8 characters"
+                autocomplete="new-password"
+                required
+                minlength="8"
+                aria-describedby="regPassword-error regPassword-strength"
+              >
+              <button type="button" class="password-toggle" id="regPasswordToggle" aria-label="显示密码 Show password">
+                <span class="eye-icon" id="regEyeIcon">&#128065;</span>
+              </button>
+            </div>
+            <!-- Password Strength -->
+            <div class="password-strength" id="passwordStrength" hidden>
+              <div class="strength-bar">
+                <div class="strength-fill" id="strengthFill"></div>
+              </div>
+              <span class="strength-label" id="strengthLabel"></span>
+            </div>
+            <span class="field-error" id="regPassword-error" role="alert" hidden></span>
+          </div>
+
+          <div class="form-group">
+            <label for="regConfirmPassword">确认密码 Confirm Password</label>
+            <div class="password-wrapper">
+              <input
+                type="password"
+                id="regConfirmPassword"
+                name="confirmPassword"
+                placeholder="Repeat your password"
+                autocomplete="new-password"
+                required
+                aria-describedby="regConfirmPassword-error"
+              >
+              <button type="button" class="password-toggle" id="regConfirmToggle" aria-label="显示密码 Show password">
+                <span class="eye-icon" id="regConfirmEyeIcon">&#128065;</span>
+              </button>
+            </div>
+            <span class="field-error" id="regConfirmPassword-error" role="alert" hidden></span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="registerBtn">注册 Create Account</button>
+          </div>
+        </form>
+
+        <!-- ── FORGOT PASSWORD MESSAGE ── -->
+        <div class="forgot-message" id="forgotMessage" role="status" aria-live="polite" hidden>
+          <div class="forgot-icon">&#128276;</div>
+          <p>功能开发中，稍后可用。</p>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-top:8px;">Feature under development. Stay tuned!</p>
+          <button type="button" class="btn-secondary" id="forgotBackBtn">返回 Return</button>
+        </div>
+
+        <!-- Toggle Link -->
+        <div class="auth-toggle" id="authToggle">
+          <span id="toggleText">还没有账号?</span>
+          <a href="#" id="toggleLink">注册 Create account</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-container">
+      &copy; 2026 MiniMax Studio. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

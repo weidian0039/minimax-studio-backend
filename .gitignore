@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Test results
+test-results/
+coverage/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment (secrets)
+.env
+.env.local
+.env.*.local
+
+# Railway
+.railway/
+
+# Temporary files
+*.tmp
+*.swp
