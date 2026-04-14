@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyToken } from '../auth/jwt';
 import { JWTPayload } from '../types/auth';
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 declare global {
   namespace Express {
     interface Request {

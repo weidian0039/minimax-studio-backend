@@ -19,17 +19,6 @@ const DB_TYPE = (process.env.DB_TYPE || 'sqlite').toLowerCase();
 
 // ── Forward wrappers ─────────────────────────────────────────────────────────────
 
-async function pg<K extends keyof typeof postgres>(
-  fn: K
-): Promise<ReturnType<typeof postgres[K]>> {
-  return (postgres[fn] as any)();
-}
-async function sql<K extends keyof typeof sqlite>(
-  fn: K, ...args: any[]
-): Promise<ReturnType<typeof sqlite[K]>> {
-  return (sqlite[fn] as any)(...args);
-}
-
 export const initDb = DB_TYPE === 'postgres'
   ? () => postgres.initDb()
   : () => { sqlite.initDb(); return Promise.resolve(); };
