@@ -16,6 +16,13 @@ let initialized = false;
 
 async function getTransporter(): Promise<nodemailer.Transporter> {
   if (initialized) return transporter;
+
+  if (process.env.NODEMAILER_TRANSPORT === 'mock') {
+    transporter = nodemailer.createTransport({ jsonTransport: true });
+    initialized = true;
+    return transporter;
+  }
+
   const useEthereal = !process.env.EMAIL_HOST || process.env.NODEMAILER_TRANSPORT === 'test';
 
   if (useEthereal) {
