@@ -1,6 +1,6 @@
 # Staging Environment Setup — MiniMax Studio
 
-**Status**: Active | **Version**: 1.0 | **Date**: 2026-04-09
+**Status**: Active | **Version**: 1.1 | **Date**: 2026-04-20
 **Author**: Release Engineer | **Sprint**: APP Sprint 1, Task 4
 
 > Staging is a production mirror — same architecture, scaled down, never shared with production data.
@@ -22,11 +22,15 @@ Internet
     ├── Frontend — Vercel
     │     └── Preview deployments per PR
     │
-    ├── Backend — Railway (1 service)
-    │     ├── Node.js / Express (API server)
-    │     ├── BullMQ (job queue)
-    │     ├── Worker process (AI generation)
-    │     └── Health endpoint: GET /health
+    ├── Backend — Railway (2 services)
+    │     ├── api service — Node.js / Express (HTTP API server)
+    │     │     ├── BullMQ client (enqueues jobs to Redis)
+    │     │     └── Health endpoint: GET /health
+    │     │
+    │     └── worker service — Standalone BullMQ processor
+    │           ├── Consumes jobs from Redis queue
+    │           ├── Calls MiniMax API for image generation
+    │           └── Uploads results to CDN, sends email
     │
     ├── Database — Railway PostgreSQL 16
     │     ├── Separate instance from production
@@ -49,7 +53,8 @@ Internet
 
 | Component | Production | Staging |
 |-----------|-----------|---------|
-| **API instances** | 2 (load balanced) | 1 |
+| **API instances** | 2 (load balanced) | 1 (api service) + 1 (worker service) |
+| **Worker instances** | 2 | 1 |
 | **Database** | Production DB | Isolated, anonymized copy |
 | **Redis** | Production Redis | Isolated instance |
 | **CDN** | Production R2 bucket | Staging R2 bucket |
@@ -57,7 +62,7 @@ Internet
 | **Email sender** | Production domain | Staging domain (`@staging.minimax.studio`) |
 | **Monitoring** | Production Sentry | Staging Sentry (separate DSN) |
 | **Traffic** | Live users | Team only |
-| **Auto-scaling** | Yes (2-10 instances) | No (fixed 1 instance) |
+| **Auto-scaling** | Yes (2-10 instances) | No (fixed 1 instance each) |
 | **SLAs** | 99.9% uptime | Best-effort |
 
 ### 1.3 Feature Flag System
@@ -130,6 +135,7 @@ services:
     environment:
       NODE_ENV: staging
       PORT: 3000
+      QUEUE_TYPE: bullmq
       # Database
       DATABASE_URL: postgresql://minimax:minimax@postgres:5432/minimax_staging
       # Redis
@@ -960,4 +966,4 @@ router.get('/health', async (req, res) => {
 
 ---
 
-*Document Version: 1.0 — APP Sprint 1, Task 4*
+*Document Version: 1.1 — 2-service architecture (api + worker), 2026-04-20*
