@@ -1,9 +1,27 @@
 # MiniMax Studio Backend — Railway Configuration
 # Docs: https://docs.railway.app/reference/config-as-code
+#
+# Architecture: 2 services
+#   api     — Express HTTP server (dist/server.js)
+#   worker  — BullMQ job processor (dist/worker.js)
+#
+# Both connect to shared Railway-provided PostgreSQL and Redis.
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
+
+# ─── API Service ───────────────────────────────────────────────────────────
+
+[[services]]
+name = "api"
+
+[services.variables]
+NODE_ENV = "production"
+PORT = "3000"
+QUEUE_TYPE = "bullmq"
+# QUEUE_POLL_INTERVAL_MS intentionally unset — API never runs queue processor,
+# the worker service handles all job processing.
 
 [deploy]
 startCommand = "node dist/server.js"
@@ -12,9 +30,22 @@ healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
+# ─── BullMQ Worker Service ─────────────────────────────────────────────────
+# Runs in-process BullMQ Worker consuming from shared Redis queue.
+# env vars DATABASE_URL + REDIS_URL come from Railway's built-in PostgreSQL
+# and Redis plugins (or can be provided manually).
+
 [[services]]
-name = "api"
+name = "worker"
 
 [services.variables]
 NODE_ENV = "production"
-PORT = "3000"
+QUEUE_TYPE = "bullmq"
+# Worker doesn't serve HTTP — override PORT to avoid conflict
+PORT = "3001"
+
+[deploy]
+startCommand = "node dist/worker.js"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

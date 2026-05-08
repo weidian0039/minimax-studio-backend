@@ -7,7 +7,7 @@ import {
 
 describe('Email Service', () => {
   beforeEach(() => {
-    process.env.NODEMAILER_TRANSPORT = 'test';
+    process.env.NODEMAILER_TRANSPORT = 'mock';
     process.env.NODE_ENV = 'test';
   });
 
